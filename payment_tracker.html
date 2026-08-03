@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Payment Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+      color: var(--grid-text-color, #222222);
+    }
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 950px;
+      margin-bottom: 12px;
+    }
+    h2 {
+      margin: 0;
+      color: #333;
+    }
+    .button-group {
+      display: flex;
+      gap: 8px;
+    }
+    button, label.btn-import {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background-color: #ffffff;
+      color: #333;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+    }
+    button:hover, label.btn-import:hover {
+      background-color: #e9ecef;
+      border-color: #adb5bd;
+    }
+    .btn-clear {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-color: #f5c6cb;
+    }
+    .btn-clear:hover {
+      background-color: #f5c6cb;
+      border-color: #f1b0b7;
+    }
+    .btn-action {
+      background-color: #e7f1ff;
+      color: #0c5460;
+      border-color: #b8daff;
+    }
+    .btn-action:hover {
+      background-color: #b8daff;
+    }
+
+    /* Color Customizer Panel */
+    .color-settings-panel {
+      max-width: 950px;
+      background: white;
+      border: 1.5px solid #888888;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      box-sizing: border-box;
+      color: #333;
+    }
+    .color-settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .color-picker-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #444;
+    }
+    .color-picker-item input[type="color"] {
+      border: 1px solid #888;
+      border-radius: 3px;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      cursor: pointer;
+      background: none;
+    }
+
+    .zebra-slider-container {
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: #444;
+    }
+    .zebra-slider-container input[type="range"] {
+      cursor: pointer;
+      width: 180px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 950px;
+      background: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1.5px solid #888888;
+      color: var(--grid-text-color, #222222);
+    }
+    th, td {
+      border: 1.5px solid #888888;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #eaeaea;
+      font-weight: bold;
+      color: var(--grid-text-color, #222222);
+    }
+    
+    /* Default background for unhighlighted odd/even rows */
+    tbody tr {
+      background-color: #ffffff;
+    }
+
+    /* Dynamic overlay for EVEN rows based on custom slider setting (up to 50%) */
+    tbody tr:nth-child(even) {
+      background-image: linear-gradient(
+        rgba(0, 0, 0, var(--zebra-opacity, 0.05)), 
+        rgba(0, 0, 0, var(--zebra-opacity, 0.05))
+      );
+    }
+
+    input[type="text"], input[type="date"] {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      box-sizing: border-box;
+      padding: 2px;
+      color: var(--grid-text-color, #222222);
+    }
+    input[type="text"]:focus, input[type="date"]:focus {
+      outline: 2px solid #4a90e2;
+      background: #ffffff;
+      border-radius: 2px;
+      color: #222222; /* Black text when editing */
+    }
+
+    /* Status highlight styles */
+    tr.date-updated {
+      background-color: var(--color-date-updated) !important;
+    }
+    tr.past-due-paid {
+      background-color: var(--color-past-due-paid) !important;
+    }
+    tr.paid {
+      background-color: var(--color-paid) !important;
+    }
+    tr.overdue {
+      background-color: var(--color-overdue) !important;
+    }
+    tr.due-soon {
+      background-color: var(--color-due-soon) !important;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header-container">
+  <h2>Payment Tracker</h2>
+  <div class="button-group">
+    <button class="btn-action" onclick="toggleColorSettings()">Color Settings</button>
+    <button class="btn-action" onclick="exportCSV()">Export CSV</button>
+    <label class="btn-import btn-action">
+      Import CSV <input type="file" id="csv-file-input" accept=".csv" style="display: none;" onchange="importCSV(event)">
+    </label>
+    <button class="btn-clear" onclick="clearData()">Clear All</button>
+  </div>
+</div>
+
+<!-- Color Customizer Panel -->
+<div id="color-panel" class="color-settings-panel" style="display: none;">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <strong>Highlight & Text Color Rules</strong>
+    <button onclick="resetDefaultColors()" style="font-size: 11px; padding: 3px 8px;">Reset Defaults</button>
+  </div>
+  
+  <div class="color-settings-grid">
+    <div class="color-picker-item">
+      <input type="color" id="picker-text-color" oninput="updateRuleColor('textColor', this.value)">
+      <label for="picker-text-color"><strong>Grid Text Color</strong></label>
+    </div>
+    <div class="color-picker-item">
+      <input type="color" id="picker-date-updated" oninput="updateRuleColor('dateUpdated', this.value)">
+      <label for="picker-date-updated">Date Updated (Unpaid)</label>
+    </div>
+    <div class="color-picker-item">
+      <input type="color" id="picker-past-due-paid" oninput="updateRuleColor('pastDuePaid', this.value)">
+      <label for="picker-past-due-paid">Past Due & Scheduled</label>
+    </div>
+    <div class="color-picker-item">
+      <input type="color" id="picker-paid" oninput="updateRuleColor('paid', this.value)">
+      <label for="picker-paid">Scheduled (Future/Today)</label>
+    </div>
+    <div class="color-picker-item">
+      <input type="color" id="picker-overdue" oninput="updateRuleColor('overdue', this.value)">
+      <label for="picker-overdue">Past Due & Unpaid</label>
+    </div>
+    <div class="color-picker-item">
+      <input type="color" id="picker-due-soon" oninput="updateRuleColor('dueSoon', this.value)">
+      <label for="picker-due-soon">Due Within 7 Days</label>
+    </div>
+  </div>
+
+  <div class="zebra-slider-container">
+    <label for="zebra-opacity-slider"><strong>Zebra Striping Contrast:</strong></label>
+    <span>Lighter (0%)</span>
+    <input type="range" id="zebra-opacity-slider" min="0" max="0.50" step="0.01" oninput="updateZebraOpacity(this.value)">
+    <span>Darker (50%)</span>
+    <span id="zebra-opacity-label" style="margin-left: 8px; font-weight: bold;">5%</span>
+  </div>
+</div>
+
+<table id="tracker-table">
+  <thead>
+    <tr>
+      <th style="width: 25%;">Card</th>
+      <th style="width: 20%;">Due Date</th>
+      <th style="width: 15%;">Amount</th>
+      <th style="width: 15%;">Payment Scheduled</th>
+      <th style="width: 25%;">Notes</th>
+    </tr>
+  </thead>
+  <tbody id="table-body">
+    <!-- 25 Rows generated dynamically -->
+  </tbody>
+</table>
+
+<script>
+  const TOTAL_ROWS = 25;
+  const STORAGE_KEY = 'payment_tracker_grid_data';
+  const COLOR_STORAGE_KEY = 'payment_tracker_color_settings';
+  const tbody = document.getElementById('table-body');
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const defaultSettings = {
+    textColor:   '#222222',
+    dateUpdated: '#fcd0df',
+    pastDuePaid: '#d0e1fd',
+    paid:        '#e2f0d9',
+    overdue:     '#ffe6e6',
+    dueSoon:     '#fff3cd',
+    zebraOpacity: 0.05
+  };
+
+  let activeColors = { ...defaultSettings };
+
+  function loadColorSettings() {
+    const saved = localStorage.getItem(COLOR_STORAGE_KEY);
+    if (saved) {
+      try {
+        activeColors = { ...defaultSettings, ...JSON.parse(saved) };
+      } catch (e) {
+        console.error('Error parsing color settings:', e);
+      }
+    }
+    applyColors();
+  }
+
+  function applyColors() {
+    document.documentElement.style.setProperty('--grid-text-color', activeColors.textColor);
+    document.documentElement.style.setProperty('--color-date-updated', activeColors.dateUpdated);
+    document.documentElement.style.setProperty('--color-past-due-paid', activeColors.pastDuePaid);
+    document.documentElement.style.setProperty('--color-paid', activeColors.paid);
+    document.documentElement.style.setProperty('--color-overdue', activeColors.overdue);
+    document.documentElement.style.setProperty('--color-due-soon', activeColors.dueSoon);
+    document.documentElement.style.setProperty('--zebra-opacity', activeColors.zebraOpacity);
+
+    document.getElementById('picker-text-color').value = activeColors.textColor;
+    document.getElementById('picker-date-updated').value = activeColors.dateUpdated;
+    document.getElementById('picker-past-due-paid').value = activeColors.pastDuePaid;
+    document.getElementById('picker-paid').value = activeColors.paid;
+    document.getElementById('picker-overdue').value = activeColors.overdue;
+    document.getElementById('picker-due-soon').value = activeColors.dueSoon;
+    
+    document.getElementById('zebra-opacity-slider').value = activeColors.zebraOpacity;
+    document.getElementById('zebra-opacity-label').textContent = Math.round(activeColors.zebraOpacity * 100) + '%';
+  }
+
+  function updateRuleColor(ruleKey, hexColor) {
+    activeColors[ruleKey] = hexColor;
+    applyColors();
+    localStorage.setItem(COLOR_STORAGE_KEY, JSON.stringify(activeColors));
+  }
+
+  function updateZebraOpacity(val) {
+    activeColors.zebraOpacity = parseFloat(val);
+    applyColors();
+    localStorage.setItem(COLOR_STORAGE_KEY, JSON.stringify(activeColors));
+  }
+
+  function resetDefaultColors() {
+    activeColors = { ...defaultSettings };
+    applyColors();
+    localStorage.setItem(COLOR_STORAGE_KEY, JSON.stringify(activeColors));
+  }
+
+  function toggleColorSettings() {
+    const panel = document.getElementById('color-panel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function loadSavedData() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing localStorage:', e);
+      }
+    }
+    return Array.from({ length: TOTAL_ROWS }, () => ({ card: '', date: '', amount: '', scheduled: '', notes: '', dateUpdated: false }));
+  }
+
+  function saveData() {
+    const data = [];
+    const rows = tbody.querySelectorAll('tr');
+
+    rows.forEach(row => {
+      data.push({
+        card: row.querySelector('.card-input').value,
+        date: row.querySelector('.due-date').value,
+        amount: row.querySelector('.amount-input').value,
+        scheduled: row.querySelector('.scheduled-input').value,
+        notes: row.querySelector('.notes-input').value,
+        dateUpdated: row.dataset.dateUpdated === 'true'
+      });
+    });
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function evaluateRowHighlight(row) {
+    const dateInput = row.querySelector('.due-date');
+    const scheduledInput = row.querySelector('.scheduled-input');
+    const dateVal = dateInput.value;
+    const isScheduled = scheduledInput.value.trim().toLowerCase() === 'x';
+    const isPastDue = dateVal && dateVal < todayStr;
+    const isDateUpdated = row.dataset.dateUpdated === 'true';
+
+    row.className = '';
+
+    if (isDateUpdated && !isScheduled) {
+      row.classList.add('date-updated');
+      return;
+    }
+
+    if (isScheduled) {
+      row.dataset.dateUpdated = 'false';
+      if (isPastDue) {
+        row.classList.add('past-due-paid');
+      } else {
+        row.classList.add('paid');
+      }
+      return;
+    }
+
+    if (dateVal) {
+      if (isPastDue) {
+        row.classList.add('overdue');
+      } else {
+        const dueDate = new Date(dateVal);
+        const today = new Date(todayStr);
+        const diffDays = (dueDate - today) / (1000 * 60 * 60 * 24);
+        if (diffDays >= 0 && diffDays <= 7) {
+          row.classList.add('due-soon');
+        }
+      }
+    }
+  }
+
+  function renderGrid(dataToRender = null) {
+    tbody.innerHTML = '';
+    const gridData = dataToRender || loadSavedData();
+
+    for (let i = 0; i < TOTAL_ROWS; i++) {
+      const rowData = gridData[i] || { card: '', date: '', amount: '', scheduled: '', notes: '', dateUpdated: false };
+      const tr = document.createElement('tr');
+      tr.dataset.dateUpdated = rowData.dateUpdated ? 'true' : 'false';
+
+      tr.innerHTML = `
+        <td><input type="text" class="card-input" value="${escapeHtml(rowData.card)}"></td>
+        <td><input type="date" class="due-date" value="${escapeHtml(rowData.date)}"></td>
+        <td><input type="text" class="amount-input" value="${escapeHtml(rowData.amount)}"></td>
+        <td><input type="text" class="scheduled-input" value="${escapeHtml(rowData.scheduled)}" placeholder="Type 'x'"></td>
+        <td><input type="text" class="notes-input" value="${escapeHtml(rowData.notes)}"></td>
+      `;
+
+      const dateInput = tr.querySelector('.due-date');
+      const scheduledInput = tr.querySelector('.scheduled-input');
+
+      dateInput.addEventListener('change', () => {
+        scheduledInput.value = '';
+        tr.dataset.dateUpdated = 'true';
+        evaluateRowHighlight(tr);
+        saveData();
+      });
+
+      tr.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', () => {
+          evaluateRowHighlight(tr);
+          saveData();
+        });
+      });
+
+      tbody.appendChild(tr);
+      evaluateRowHighlight(tr);
+    }
+    
+    if (dataToRender) {
+      saveData();
+    }
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function parseDateToIso(dateStr) {
+    if (!dateStr) return '';
+    dateStr = dateStr.trim();
+    
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return dateStr;
+    }
+
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      let month = parts[0].padStart(2, '0');
+      let day = parts[1].padStart(2, '0');
+      let year = parts[2];
+
+      if (year.length === 2) {
+        year = '20' + year;
+      }
+
+      return `${year}-${month}-${day}`;
+    }
+
+    return '';
+  }
+
+  function clearData() {
+    if (confirm('Are you sure you want to clear all rows?')) {
+      localStorage.removeItem(STORAGE_KEY);
+      renderGrid();
+    }
+  }
+
+  function exportCSV() {
+    const rows = tbody.querySelectorAll('tr');
+    let csvContent = 'card,due date,amount,payment scheduled,notes\n';
+
+    rows.forEach(row => {
+      const card = row.querySelector('.card-input').value.replace(/"/g, '""');
+      const date = row.querySelector('.due-date').value;
+      const amount = row.querySelector('.amount-input').value.replace(/"/g, '""');
+      const scheduled = row.querySelector('.scheduled-input').value.replace(/"/g, '""');
+      const notes = row.querySelector('.notes-input').value.replace(/"/g, '""');
+
+      const cardFormatted = card.includes(',') ? `"${card}"` : card;
+      const amountFormatted = amount.includes(',') ? `"${amount}"` : amount;
+      const notesFormatted = notes.includes(',') ? `"${notes}"` : notes;
+
+      csvContent += `${cardFormatted},${date},${amountFormatted},${scheduled},${notesFormatted}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `payment_tracker_${todayStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  function importCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const text = e.target.result;
+      const lines = text.split(/\r\n|\n/);
+      const importedData = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const values = parseCSVLine(line);
+
+        if (i === 0 && values[0] && values[0].toLowerCase().includes('card')) {
+          continue;
+        }
+
+        if (values.length >= 1) {
+          importedData.push({
+            card: values[0] || '',
+            date: parseDateToIso(values[1]),
+            amount: values[2] || '',
+            scheduled: values[3] || '',
+            notes: values[4] || '',
+            dateUpdated: false
+          });
+        }
+      }
+
+      while (importedData.length < TOTAL_ROWS) {
+        importedData.push({ card: '', date: '', amount: '', scheduled: '', notes: '', dateUpdated: false });
+      }
+
+      renderGrid(importedData.slice(0, TOTAL_ROWS));
+      event.target.value = '';
+    };
+
+    reader.readAsText(file);
+  }
+
+  function parseCSVLine(text) {
+    const result = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (c === '"') {
+        inQuotes = !inQuotes;
+      } else if (c === ',' && !inQuotes) {
+        result.push(cur.trim());
+        cur = '';
+      } else {
+        cur += c;
+      }
+    }
+    result.push(cur.trim());
+    return result;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadColorSettings();
+    renderGrid();
+  });
+</script>
+
+</body>
+</html>

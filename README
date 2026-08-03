@@ -1,0 +1,85 @@
+# Payment Tracker
+
+A lightweight, local-first web application designed to help you track credit card and bill due dates, payment schedules, and notes. Built as a single, zero-dependency HTML file, it runs directly in your web browser with zero setup or server requirements.
+
+---
+
+## Key Features
+
+* **Local Storage Auto-Save:** Edits made to card names, due dates, amounts, scheduled markers, or notes save instantly to your browser's local memory (`localStorage`).
+* **Smart Row Highlighting:** Automatic, real-time color-coding based on due dates and payment status:
+* **Pink:** Date updated/changed and pending payment confirmation.
+* **Blue:** Payment scheduled for a bill whose due date has passed.
+* **Green:** Payment scheduled for an upcoming or current bill.
+* **Red:** Past due and unpaid.
+* **Yellow:** Due within the next 7 days and unpaid.
+
+
+* **Customizable Appearance:**
+* **Color Customizer:** Adjustable color rules for each status highlight and grid text via an built-in settings panel.
+* **Zebra Striping Contrast:** Adjustable slider (from 0% to 50% darker) to tune the contrast of even-numbered rows for better readability across adjacent highlighted rows.
+* **Bold Grid Lines:** 1.5px high-contrast borders for clear visual separation.
+
+
+* **CSV Import & Export:**
+* Export your 25-row grid to a formatted `.csv` file anytime for backups or record-keeping.
+* Import CSV files seamlessly (handles both standard ISO `YYYY-MM-DD` and US `MM/DD/YY` or `MM/DD/YYYY` date formats).
+
+
+
+---
+
+## How to Use
+
+### 1. Running the Application
+
+No installation or local server is required.
+
+1. Download or save `index.html` to your computer.
+2. Double-click `index.html` (or right-click and choose **Open with** -> your preferred web browser).
+
+### 2. Entering Data
+
+* **Card / Bill Name:** Type the card or bill identifier in the first column.
+* **Due Date:** Select a date using the built-in browser date picker.
+* *Note:* Modifying an existing due date will automatically clear the **Payment Scheduled** field and mark the row in **Pink** so you can review and confirm payment details.
+
+
+* **Amount:** Enter the payment amount (e.g., `$12.84`).
+* **Payment Scheduled:** Type `x` when a payment has been submitted or scheduled. This triggers the appropriate green or blue highlight rule.
+* **Notes:** Optional column for extra details (e.g., account numbers, minimum payment notes).
+
+### 3. Managing Color Settings
+
+1. Click the **Color Settings** button at the top right of the grid.
+2. Use the color pickers to adjust text or highlight colors to your liking.
+3. Use the **Zebra Striping Contrast** slider to increase or decrease row separation.
+4. Click **Reset Defaults** at any time to restore the original theme.
+
+### 4. Importing & Exporting Data
+
+* **Export CSV:** Downloads a file named `payment_tracker_YYYY-MM-DD.csv` containing your current grid contents.
+* **Import CSV:** Click **Import CSV** to choose a CSV file. The app automatically maps the columns, parses date formats, fills the grid, and updates `localStorage`.
+* **Clear All:** Clears all 25 rows and wipes the grid data from `localStorage` after confirmation.
+
+---
+
+## CSV File Format
+
+If you are creating a CSV file manually or importing from a spreadsheet application (like LibreOffice Calc or Excel), format your file with or without headers using the following structure:
+
+```csv
+card,due date,amount,payment scheduled,notes
+boa beth mc,08/22/26,$12.84,x,
+boa beth car loan,09/02/26,$34.89,x,regular amount is 34.89
+
+```
+
+---
+
+## Technical Overview
+
+* **Format:** Single `.html` file containing HTML, CSS, and plain JavaScript.
+* **Dependencies:** None (No frameworks, libraries, or external CDNs required).
+* **Storage:** Uses browser `localStorage` under keys `payment_tracker_grid_data` and `payment_tracker_color_settings`.
+* **Privacy:** All data remains 100% local to your machine and is never sent over a network.
