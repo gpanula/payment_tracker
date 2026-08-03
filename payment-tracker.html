@@ -84,7 +84,7 @@
       color: #721c24;
     }
 
-    /* Color Customizer Panel */
+    /* Settings Panel */
     .color-settings-panel {
       max-width: 980px;
       background: white;
@@ -125,13 +125,22 @@
       border-top: 1px solid #e0e0e0;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 20px;
       font-size: 13px;
       color: #444;
+      flex-wrap: wrap;
     }
     .zebra-slider-container input[type="range"] {
       cursor: pointer;
-      width: 180px;
+      width: 150px;
+    }
+    .currency-select-item select {
+      padding: 3px 6px;
+      font-size: 13px;
+      border-radius: 3px;
+      border: 1px solid #888;
+      background: white;
+      cursor: pointer;
     }
 
     table {
@@ -228,7 +237,7 @@
   <h2>Payment Tracker</h2>
   <div class="button-group">
     <button class="btn-add-row" onclick="addRow()">+ Add Row</button>
-    <button class="btn-action" onclick="toggleColorSettings()">Color Settings</button>
+    <button class="btn-action" onclick="toggleSettings()">Settings</button>
     <button class="btn-action" onclick="exportCSV()">Export CSV</button>
     <label class="btn-import btn-action">
       Import CSV <input type="file" id="csv-file-input" accept=".csv" style="display: none;" onchange="importCSV(event)">
@@ -237,10 +246,10 @@
   </div>
 </div>
 
-<!-- Color Customizer Panel -->
-<div id="color-panel" class="color-settings-panel" style="display: none;">
+<!-- Customizer Settings Panel -->
+<div id="settings-panel" class="color-settings-panel" style="display: none;">
   <div style="display: flex; justify-content: space-between; align-items: center;">
-    <strong>Highlight & Text Color Rules</strong>
+    <strong>Grid & Highlight Settings</strong>
     <button onclick="resetDefaultColors()" style="font-size: 11px; padding: 3px 8px;">Reset Defaults</button>
   </div>
   
@@ -267,16 +276,29 @@
     </div>
     <div class="color-picker-item">
       <input type="color" id="picker-due-soon" oninput="updateRuleColor('dueSoon', this.value)">
-      <label for="picker-due-soon">Due Within 7 Days</label>
+      <label for="picker-due-soon">Due Within 7 Days (Unscheduled)</label>
     </div>
   </div>
 
   <div class="zebra-slider-container">
-    <label for="zebra-opacity-slider"><strong>Zebra Striping Contrast:</strong></label>
-    <span>Lighter (0%)</span>
-    <input type="range" id="zebra-opacity-slider" min="0" max="0.50" step="0.01" oninput="updateZebraOpacity(this.value)">
-    <span>Darker (50%)</span>
-    <span id="zebra-opacity-label" style="margin-left: 8px; font-weight: bold;">5%</span>
+    <div>
+      <label for="zebra-opacity-slider"><strong>Zebra Striping Contrast:</strong></label>
+      <span style="margin-left: 5px;">Lighter (0%)</span>
+      <input type="range" id="zebra-opacity-slider" min="0" max="0.50" step="0.01" oninput="updateZebraOpacity(this.value)">
+      <span>Darker (50%)</span>
+      <span id="zebra-opacity-label" style="margin-left: 8px; font-weight: bold;">5%</span>
+    </div>
+
+    <div class="currency-select-item">
+      <label for="currency-symbol-select"><strong>Currency Symbol:</strong></label>
+      <select id="currency-symbol-select" onchange="updateCurrencySymbol(this.value)">
+        <option value="$">$ (Dollar)</option>
+        <option value="€">€ (Euro)</option>
+        <option value="¥">¥ (Yen / Yuan)</option>
+        <option value="£">£ (Pound)</option>
+        <option value="₹">₹ (Rupee)</option>
+      </select>
+    </div>
   </div>
 </div>
 
@@ -307,30 +329,31 @@
   let currentSortAsc = true;
 
   const defaultSettings = {
-    textColor:   '#222222',
-    dateUpdated: '#fcd0df',
-    pastDuePaid: '#d0e1fd',
-    paid:        '#e2f0d9',
-    overdue:     '#ffe6e6',
-    dueSoon:     '#fff3cd',
-    zebraOpacity: 0.05
+    textColor:      '#222222',
+    dateUpdated:    '#63becb',
+    pastDuePaid:    '#d0e1fd',
+    paid:           '#e2f0d9',
+    overdue:        '#ee1b1b',
+    dueSoon:        '#f09138', // RGB(240, 145, 56)
+    zebraOpacity:   0.05,
+    currencySymbol: '$'
   };
 
   let activeColors = { ...defaultSettings };
 
-  function loadColorSettings() {
+  function loadSettings() {
     const saved = localStorage.getItem(COLOR_STORAGE_KEY);
     if (saved) {
       try {
         activeColors = { ...defaultSettings, ...JSON.parse(saved) };
       } catch (e) {
-        console.error('Error parsing color settings:', e);
+        console.error('Error parsing settings:', e);
       }
     }
-    applyColors();
+    applySettings();
   }
 
-  function applyColors() {
+  function applySettings() {
     document.documentElement.style.setProperty('--grid-text-color', activeColors.textColor);
     document.documentElement.style.setProperty('--color-date-updated', activeColors.dateUpdated);
     document.documentElement.style.setProperty('--color-past-due-paid', activeColors.pastDuePaid);
@@ -348,29 +371,56 @@
     
     document.getElementById('zebra-opacity-slider').value = activeColors.zebraOpacity;
     document.getElementById('zebra-opacity-label').textContent = Math.round(activeColors.zebraOpacity * 100) + '%';
+
+    document.getElementById('currency-symbol-select').value = activeColors.currencySymbol || '$';
   }
 
   function updateRuleColor(ruleKey, hexColor) {
     activeColors[ruleKey] = hexColor;
-    applyColors();
+    applySettings();
     localStorage.setItem(COLOR_STORAGE_KEY, JSON.stringify(activeColors));
   }
 
   function updateZebraOpacity(val) {
     activeColors.zebraOpacity = parseFloat(val);
-    applyColors();
+    applySettings();
     localStorage.setItem(COLOR_STORAGE_KEY, JSON.stringify(activeColors));
+  }
+
+  function updateCurrencySymbol(symbol) {
+    activeColors.currencySymbol = symbol;
+    applySettings();
+    localStorage.setItem(COLOR_STORAGE_KEY, JSON.stringify(activeColors));
+
+    const amountInputs = tbody.querySelectorAll('.amount-input');
+    amountInputs.forEach(input => {
+      if (input.value) {
+        input.value = formatAmountString(input.value);
+      }
+    });
+    saveData();
   }
 
   function resetDefaultColors() {
     activeColors = { ...defaultSettings };
-    applyColors();
+    applySettings();
     localStorage.setItem(COLOR_STORAGE_KEY, JSON.stringify(activeColors));
+    renderGrid();
   }
 
-  function toggleColorSettings() {
-    const panel = document.getElementById('color-panel');
+  function toggleSettings() {
+    const panel = document.getElementById('settings-panel');
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function formatAmountString(val) {
+    if (!val || !val.trim()) return '';
+    const cleaned = val.replace(/[^0-9.-]+/g, '');
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return val;
+
+    const symbol = activeColors.currencySymbol || '$';
+    return `${symbol}${num.toFixed(2)}`;
   }
 
   function loadSavedData() {
@@ -454,10 +504,12 @@
     const tr = document.createElement('tr');
     tr.dataset.dateUpdated = rowData.dateUpdated ? 'true' : 'false';
 
+    const formattedAmount = formatAmountString(rowData.amount);
+
     tr.innerHTML = `
       <td><input type="text" class="card-input" value="${escapeHtml(rowData.card)}"></td>
       <td><input type="date" class="due-date" value="${escapeHtml(rowData.date)}"></td>
-      <td><input type="text" class="amount-input" value="${escapeHtml(rowData.amount)}"></td>
+      <td><input type="text" class="amount-input" value="${escapeHtml(formattedAmount)}"></td>
       <td><input type="text" class="scheduled-input" value="${escapeHtml(rowData.scheduled)}" placeholder="Type 'x'"></td>
       <td><input type="text" class="notes-input" value="${escapeHtml(rowData.notes)}"></td>
       <td class="action-col"><button class="btn-delete-row" title="Delete Row" onclick="deleteRow(this)">&times;</button></td>
@@ -465,12 +517,20 @@
 
     const dateInput = tr.querySelector('.due-date');
     const scheduledInput = tr.querySelector('.scheduled-input');
+    const amountInput = tr.querySelector('.amount-input');
 
     dateInput.addEventListener('change', () => {
       scheduledInput.value = '';
       tr.dataset.dateUpdated = 'true';
       evaluateRowHighlight(tr);
       saveData();
+    });
+
+    amountInput.addEventListener('blur', () => {
+      if (amountInput.value) {
+        amountInput.value = formatAmountString(amountInput.value);
+        saveData();
+      }
     });
 
     tr.querySelectorAll('input').forEach(input => {
@@ -500,7 +560,6 @@
 
   function parseAmountValue(val) {
     if (!val) return -Infinity;
-    // Strip currency symbols and commas to sort numerically
     const cleaned = val.replace(/[^0-9.-]+/g, '');
     const num = parseFloat(cleaned);
     return isNaN(num) ? -Infinity : num;
@@ -514,7 +573,6 @@
       currentSortAsc = true;
     }
 
-    // Reset sort indicators
     ['card', 'date', 'amount', 'scheduled', 'notes'].forEach(k => {
       const icon = document.getElementById(`sort-icon-${k}`);
       if (icon) icon.textContent = '';
@@ -531,7 +589,6 @@
       let valA = a[key] ? a[key].trim().toLowerCase() : '';
       let valB = b[key] ? b[key].trim().toLowerCase() : '';
 
-      // Keep completely empty rows at the bottom
       const aIsEmpty = !a.card && !a.date && !a.amount && !a.scheduled && !a.notes;
       const bIsEmpty = !b.card && !b.date && !b.amount && !b.scheduled && !b.notes;
       if (aIsEmpty && !bIsEmpty) return 1;
@@ -720,7 +777,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    loadColorSettings();
+    loadSettings();
     renderGrid();
   });
 </script>
