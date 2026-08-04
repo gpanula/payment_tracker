@@ -413,6 +413,31 @@
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
   }
 
+  function addOneMonth(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    let year = parseInt(parts[0], 10);
+    let month = parseInt(parts[1], 10);
+    let day = parseInt(parts[2], 10);
+
+    month += 1;
+    if (month > 12) {
+      month = 1;
+      year += 1;
+    }
+
+    const maxDays = new Date(year, month, 0).getDate();
+    if (day > maxDays) {
+      day = maxDays;
+    }
+
+    const yyyy = String(year);
+    const mm = String(month).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
   function formatAmountString(val) {
     if (!val || !val.trim()) return '';
     const cleaned = val.replace(/[^0-9.-]+/g, '');
@@ -519,6 +544,12 @@
     const scheduledInput = tr.querySelector('.scheduled-input');
     const amountInput = tr.querySelector('.amount-input');
 
+    let initialAmountVal = amountInput.value;
+
+    amountInput.addEventListener('focus', () => {
+      initialAmountVal = amountInput.value;
+    });
+
     dateInput.addEventListener('change', () => {
       scheduledInput.value = '';
       tr.dataset.dateUpdated = 'true';
@@ -528,7 +559,22 @@
 
     amountInput.addEventListener('blur', () => {
       if (amountInput.value) {
+        const num = parseAmountValue(amountInput.value);
+        const prevNum = parseAmountValue(initialAmountVal);
+
+        if (num === 0 && prevNum !== 0) {
+          if (dateInput.value) {
+            dateInput.value = addOneMonth(dateInput.value);
+          } else {
+            dateInput.value = addOneMonth(todayStr);
+          }
+          scheduledInput.value = 'x';
+          tr.dataset.dateUpdated = 'false';
+        }
+
         amountInput.value = formatAmountString(amountInput.value);
+        initialAmountVal = amountInput.value;
+        evaluateRowHighlight(tr);
         saveData();
       }
     });
