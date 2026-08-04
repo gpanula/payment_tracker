@@ -7,7 +7,7 @@ A lightweight, local-first web application designed to help you track credit car
 ## Key Features
 
 * **Dynamic Grid & Auto-Save:** Start with a 25-row default grid or expand it as needed. Edits made to card names, due dates, amounts, scheduled markers, or notes save instantly to your browser's local memory (`localStorage`) across sessions.
-* **Auto Currency Formatting & Quick Rollover:** The **Amount** column automatically formats typed numbers into two-decimal currency values on blur (e.g., typing `12.84` becomes `$12.84`). Entering `0` for the amount automatically increments the due date by one month and marks the payment as scheduled (`x`).
+* **Auto Currency Formatting & Quick Rollover:** The **Amount** column automatically formats typed numbers into two-decimal currency values on blur (e.g., typing `12.84` becomes `$12.84`). Entering `0` for the amount automatically increments the due date by one month and marks the payment as scheduled (`x`). Additionally, changing a due date to a future/today date when the amount due is zero automatically marks the payment as scheduled (`x`).
 * **Column Sorting:** Click any table header (**Card**, **Due Date**, **Amount**, **Payment Scheduled**, or **Notes**) to sort the grid in ascending ($\mathbf{\uparrow}$) or descending ($\mathbf{\downarrow}$) order. The **Amount** column sorts numerically, ignoring currency symbols.
 * **Interactive Row Management:** 
   * **Add Rows:** Easily add empty rows to the bottom of your tracker using the **+ Add Row** button.
@@ -39,7 +39,7 @@ No installation or local server is required.
 ### 2. Entering Data & Sorting
 * **Card / Bill Name:** Type the card or bill name in the first column.
 * **Due Date:** Select a date using the built-in browser date picker.
-  * *Note:* Modifying an existing due date automatically clears the **Payment Scheduled** field and highlights the row in **Teal** to prompt review.
+  * *Note:* Modifying an existing due date automatically clears the **Payment Scheduled** field and highlights the row in **Teal** to prompt review (unless the amount due is zero and the new date is today or in the future, which automatically marks payment scheduled).
 * **Amount:** Enter the payment amount (e.g., `45.12`). Click away or press enter to auto-apply your chosen currency symbol.
   * *Note:* Entering `0` for the amount automatically increments the due date by one month and marks the payment as scheduled (`x`).
 * **Payment Scheduled:** Type `x` when a payment is scheduled. This clears the date-updated flag and triggers the green or blue highlight rule.
